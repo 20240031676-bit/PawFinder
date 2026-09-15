@@ -1,23 +1,22 @@
-# 🐾 PawFinder — Dog Breed Explorer
+PawFinder Dog Breed Explorer
 
 PawFinder is a full-stack-ready, responsive web application for the **Dogs** niche. It uses the public **Dog CEO API** to fetch real dog breed data and images with JavaScript `fetch()` and HTTP GET requests.
 
 ## Features
 
-- 🔎 Search dog breeds
-- 🐕 Browse the complete breed list
-- 🎲 Generate a random dog
-- 🖼️ View a breed photo gallery
-- ❤️ Save favorite dog photos using `localStorage`
-- 🔍 Open gallery images in a lightbox
-- ⏳ Loading/status feedback
-- ⚠️ API error handling
-- 📱 Responsive desktop and mobile design
-- 🔐 No API key required for the public endpoints used
+-  Search dog breeds
+-  Browse the complete breed list
+-  Generate a random dog
+-  View a breed photo gallery
+-  Save favorite dog photos using `localStorage`
+-  Open gallery images in a lightbox
+-  Loading/status feedback
+-  API error handling
+-  Responsive desktop and mobile design
+-  No API key required for the public endpoints used
 
-## API Used
-
-**Dog CEO API** — an open collection of dog pictures with public REST endpoints.
+ API Used
+Dog CEO API — an open collection of dog pictures with public REST endpoints.
 
 Documentation: https://dog.ceo/dog-api/documentation/
 
@@ -34,7 +33,7 @@ GET https://dog.ceo/api/breed/{breed}/{sub-breed}/images/random/{count}
 
 The public endpoints used in this project do not require an API key, so no secret is committed to GitHub.
 
-## Technologies
+Technologies
 
 - HTML5
 - CSS3
@@ -45,7 +44,7 @@ The public endpoints used in this project do not require an API key, so no secre
 - GitHub
 - Netlify
 
-## Project Structure
+Project Structure
 
 ```text
 pawfinder/
@@ -57,9 +56,9 @@ pawfinder/
     └── app.js
 ```
 
-## Run Locally
+Run Locally
 
-### Option 1 — VS Code Live Server
+Option 1 — VS Code Live Server
 
 1. Download or clone this repository.
 2. Open the folder in Visual Studio Code.
@@ -67,7 +66,7 @@ pawfinder/
 4. Right-click `index.html`.
 5. Select **Open with Live Server**.
 
-### Option 2 — Python local server
+Option 2 — Python local server
 
 If Python is installed, open a terminal inside the project folder and run:
 
@@ -83,7 +82,7 @@ http://localhost:5500
 
 Using a local server is recommended instead of opening the HTML file directly.
 
-## GitHub Setup
+GitHub Setup
 
 1. Create a new public repository named `pawfinder`.
 2. Upload `index.html`, `README.md`, the `css` folder, and the `js` folder.
@@ -96,9 +95,9 @@ Example:
 https://github.com/YOUR-USERNAME/pawfinder
 ```
 
-## Netlify Deployment
+Netlify Deployment
 
-### Recommended: Deploy from GitHub
+Recommended: Deploy from GitHub
 
 1. Log in to Netlify.
 2. Choose **Add new project** → **Import an existing project**.
@@ -112,7 +111,7 @@ https://github.com/YOUR-USERNAME/pawfinder
 
 After GitHub and Netlify are connected, future pushes to the production branch can trigger new deployments automatically.
 
-### Alternative: Netlify Drop
+Alternative: Netlify Drop
 
 You can also deploy without connecting GitHub:
 
@@ -124,17 +123,17 @@ You can also deploy without connecting GitHub:
 
 For the class submission, GitHub + Netlify connected deployment is recommended because your repository and live site remain easy to update.
 
-## API Key / Security
+API Key / Security
 
 The Dog CEO public endpoints used by this application do not require an API key. Therefore, PawFinder does not contain a private API credential and there is no secret to commit or expose.
 
 If a different API requiring a private key is used in a future version, the key should not be placed directly in frontend JavaScript. A serverless function or environment variable should be used instead.
 
-## Error Handling
+Error Handling
 
 The application checks the HTTP response and the API response status. If a request fails, the interface displays a user-friendly error message instead of leaving the page blank.
 
-## Interactive Features
+Interactive Features
 
 The assignment requirement for user interaction is satisfied through multiple features:
 
@@ -145,7 +144,7 @@ The assignment requirement for user interaction is satisfied through multiple fe
 5. Favorite/remove favorite actions
 6. Image lightbox
 
-## Submission
+Submission
 
 Paste these two links into the Canvas assignment:
 
@@ -159,7 +158,7 @@ https://YOUR-SITE-NAME.netlify.app
 
 Replace the placeholder URLs with your actual links after publishing.
 
-## Credits
+Credits
 
 Dog images/data: Dog CEO API — https://dog.ceo/dog-api/
 
