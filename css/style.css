@@ -248,3 +248,28 @@ body.warm-mode {
     radial-gradient(circle at 88% 18%, rgba(195, 123, 73, .22), transparent 30%),
     linear-gradient(135deg, #30251e 0%, #4b3829 45%, #211812 100%);
 }
+
+
+.image-unavailable {
+  opacity: 0;
+  min-height: 240px;
+}
+
+.empty-state {
+  width: 100%;
+  padding: 42px 24px;
+  text-align: center;
+  border-radius: 24px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 10px;
+}
+
+.favorite-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}

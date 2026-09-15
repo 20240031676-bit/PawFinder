@@ -36,6 +36,59 @@ let breeds = {};
 let currentDog = { image: "", breed: "Random Dog", value: "" };
 let favorites = loadFavorites();
 
+// Common breeds that may be missing from the Dog CEO breed list.
+// These are searchable and clearly marked as "not available in the selected image API"
+// instead of being silently omitted.
+const COMMON_MISSING_BREEDS = [
+  { name: "Cavalier King Charles Spaniel", aliases: ["cavalier", "cavalier king charles", "king charles", "ckcs"] },
+  { name: "American Pit Bull Terrier", aliases: ["pit bull", "pitbull", "american pit bull", "apbt"] },
+  { name: "American Staffordshire Terrier", aliases: ["amstaff", "american staffy", "american staffordshire"] },
+  { name: "Australian Labradoodle", aliases: ["labradoodle"] },
+  { name: "Goldendoodle", aliases: ["goldendoodle", "golden doodle"] },
+  { name: "Cockapoo", aliases: ["cockapoo"] },
+  { name: "Maltipoo", aliases: ["maltipoo"] },
+  { name: "Bernedoodle", aliases: ["bernedoodle"] },
+  { name: "Shih-Poo", aliases: ["shih poo", "shihpoo"] },
+  { name: "Yorkipoo", aliases: ["yorkipoo"] },
+  { name: "Chow Chow", aliases: ["chow", "chowchow"] },
+  { name: "Belgian Malinois", aliases: ["malinois", "belgian malinois"] },
+  { name: "Cane Corso", aliases: ["cane corso"] },
+  { name: "Miniature Schnauzer", aliases: ["mini schnauzer", "miniature schnauzer"] },
+  { name: "Giant Schnauzer", aliases: ["giant schnauzer"] },
+  { name: "Standard Schnauzer", aliases: ["standard schnauzer"] },
+  { name: "Papillon", aliases: ["papillon"] },
+  { name: "Havanese", aliases: ["havanese"] },
+  { name: "Lagotto Romagnolo", aliases: ["lagotto"] },
+  { name: "Leonberger", aliases: ["leonberger"] },
+  { name: "Newfoundland", aliases: ["newfoundland", "newfie"] },
+  { name: "Old English Sheepdog", aliases: ["old english sheepdog", "oes"] },
+  { name: "Samoyed", aliases: ["samoyed", "sammy"] }
+];
+
+function missingBreedScore(query, item) {
+  const words = searchWords(query);
+  if (!words.length) return 0;
+
+  const aliasText = item.aliases.join(" ");
+  const searchable = normalizeSearch(`${item.name} ${aliasText}`);
+  const matches = words.every(word => wordMatches(word, searchable));
+  if (!matches) return -1;
+
+  const normalizedName = normalizeSearch(item.name);
+  const fullQuery = words.join(" ");
+  let score = 0;
+
+  if (normalizedName === fullQuery) score += 120;
+  if (normalizedName.startsWith(fullQuery)) score += 60;
+  if (searchable.includes(fullQuery)) score += 35;
+
+  words.forEach(word => {
+    if (searchable.includes(word)) score += 10;
+  });
+
+  return score;
+}
+
 function prettify(text = "") {
   return text.split("-").map(part => part ? part.charAt(0).toUpperCase() + part.slice(1) : "").join(" ");
 }
@@ -72,28 +125,179 @@ async function loadBreeds() {
   }
 }
 
-function populateBreedSelect(filter = "") {
-  const normalized = filter.trim().toLowerCase();
-  const options = ['<option value="">All Breeds</option>'];
+function normalizeSearch(text = "") {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function searchWords(text = "") {
+  return normalizeSearch(text).split(/\s+/).filter(Boolean);
+}
+
+function editDistance(a, b) {
+  if (a === b) return 0;
+  if (!a) return b.length;
+  if (!b) return a.length;
+
+  const previous = Array.from({ length: b.length + 1 }, (_, i) => i);
+
+  for (let i = 1; i <= a.length; i++) {
+    let current = [i];
+    for (let j = 1; j <= b.length; j++) {
+      current[j] = a[i - 1] === b[j - 1]
+        ? previous[j - 1]
+        : Math.min(previous[j - 1] + 1, previous[j] + 1, current[j - 1] + 1);
+    }
+    for (let j = 0; j <= b.length; j++) previous[j] = current[j];
+  }
+
+  return previous[b.length];
+}
+
+function wordMatches(word, text) {
+  if (!word) return true;
+  if (text.includes(word)) return true;
+
+  // Allow small spelling mistakes: e.g. "golden retriver" or "sheperd".
+  const candidates = text.split(" ");
+  return candidates.some(candidate => {
+    if (candidate.length < 4 || word.length < 4) return false;
+    const limit = word.length >= 7 ? 2 : 1;
+    return editDistance(word, candidate) <= limit;
+  });
+}
+
+function getBreedSearchScore(query, breed, subBreed = "") {
+  const words = searchWords(query);
+  if (!words.length) return 0;
+
+  const label = normalizeSearch(breedLabel(breed, subBreed));
+  const breedText = normalizeSearch(breed);
+  const subText = normalizeSearch(subBreed);
+  const searchable = `${label} ${breedText} ${subText}`.trim();
+
+  // Common shortcuts make the search feel more natural.
+  const aliases = {
+    lab: "labrador",
+    labs: "labrador",
+    shep: "shepherd",
+    shepard: "shepherd",
+    pom: "pomeranian",
+    chi: "chihuahua",
+    doberman: "dobermann",
+    staffy: "staffordshire",
+    staffie: "staffordshire"
+  };
+
+  const expandedWords = words.map(word => aliases[word] || word);
+  const matches = expandedWords.every(word => wordMatches(word, searchable));
+  if (!matches) return -1;
+
+  let score = 0;
+  const fullQuery = expandedWords.join(" ");
+
+  if (label === fullQuery) score += 100;
+  if (label.startsWith(fullQuery)) score += 50;
+  if (searchable.includes(fullQuery)) score += 30;
+
+  expandedWords.forEach(word => {
+    if (breedText.includes(word)) score += 12;
+    if (subText.includes(word)) score += 12;
+    if (label.includes(word)) score += 8;
+  });
+
+  return score;
+}
+
+function getBreedOptions(filter = "") {
+  const options = [];
 
   Object.entries(breeds).forEach(([breed, subBreeds]) => {
-    const prettyBreed = prettify(breed);
-    const mainMatches = breed.includes(normalized) || prettyBreed.toLowerCase().includes(normalized);
+    const mainScore = getBreedSearchScore(filter, breed);
+
     if (subBreeds.length === 0) {
-      if (!normalized || mainMatches) options.push(`<option value="${breed}">${prettyBreed}</option>`);
+      if (!filter.trim() || mainScore >= 0) {
+        options.push({
+          value: breed,
+          label: prettify(breed),
+          score: filter.trim() ? mainScore : 0,
+          available: true
+        });
+      }
       return;
     }
 
-    if (!normalized || mainMatches) options.push(`<option value="${breed}">${prettyBreed}</option>`);
+    if (!filter.trim() || mainScore >= 0) {
+      options.push({
+        value: breed,
+        label: prettify(breed),
+        score: filter.trim() ? mainScore + 2 : 0,
+        available: true
+      });
+    }
+
     subBreeds.forEach(sub => {
-      const full = `${sub} ${breed}`.toLowerCase();
-      if (!normalized || mainMatches || full.includes(normalized)) {
-        options.push(`<option value="${breed}/${sub}">${breedLabel(breed, sub)}</option>`);
+      const score = getBreedSearchScore(filter, breed, sub);
+      if (!filter.trim() || score >= 0) {
+        options.push({
+          value: `${breed}/${sub}`,
+          label: breedLabel(breed, sub),
+          score: filter.trim() ? score : 0,
+          available: true
+        });
       }
     });
   });
 
-  els.breedSelect.innerHTML = options.join("");
+  // Add common breeds that are not represented by Dog CEO.
+  COMMON_MISSING_BREEDS.forEach(item => {
+    const score = missingBreedScore(filter, item);
+    if (!filter.trim() || score >= 0) {
+      options.push({
+        value: `missing:${encodeURIComponent(item.name)}`,
+        label: `${item.name} — API image unavailable`,
+        score: filter.trim() ? score : -1,
+        available: false,
+        missingName: item.name
+      });
+    }
+  });
+
+  if (filter.trim()) {
+    options.sort((a, b) => b.score - a.score || a.label.localeCompare(b.label));
+  } else {
+    options.sort((a, b) => a.label.replace(" — API image unavailable", "").localeCompare(
+      b.label.replace(" — API image unavailable", "")
+    ));
+  }
+
+  return options;
+}
+
+function populateBreedSelect(filter = "") {
+  const options = getBreedOptions(filter);
+  const filterText = filter.trim();
+
+  const availableCount = options.filter(option => option.available).length;
+  const missingCount = options.length - availableCount;
+
+  els.breedSelect.innerHTML = [
+    `<option value="">${filterText ? `${options.length} matches (${availableCount} available)` : "All Breeds"}</option>`,
+    ...options.map(option => {
+      const safeValue = option.value.replace(/"/g, "&quot;");
+      const unavailable = option.available ? "" : " — not in Dog CEO";
+      return `<option value="${safeValue}" ${option.available ? "" : "data-unavailable=\"true\""}>${option.available ? option.label : `${option.missingName} — image unavailable`}</option>`;
+    })
+  ].join("");
+
+  // Keep the count available for status messaging.
+  if (filterText && missingCount > 0) {
+    setStatus(`${options.length} matches found. ${missingCount} common breed(s) are recognized but not available in the Dog CEO image API.`, "success");
+  }
 }
 
 function parseBreedValue(value) {
@@ -129,6 +333,8 @@ async function loadRandomDog(showStatus = true) {
     if (showStatus) setStatus("Finding a random dog...");
     const image = await apiGet("/breeds/image/random");
     currentDog = { image, breed: detectBreedFromUrl(image), value: "" };
+    els.favoriteBtn.disabled = false;
+    els.featuredImage.classList.remove("image-unavailable");
     renderFeatured();
     els.heroDogImage.src = image;
     if (showStatus) setStatus("Here is a fresh dog for you!", "success");
@@ -140,14 +346,54 @@ async function loadRandomDog(showStatus = true) {
 
 async function loadBreed(value) {
   if (!value) return loadRandomDog();
+
+  // Recognized common breed, but not represented by Dog CEO.
+  if (value.startsWith("missing:")) {
+    const missingName = decodeURIComponent(value.slice("missing:".length));
+
+    currentDog = { image: "", breed: missingName, value };
+    els.featuredImage.removeAttribute("src");
+    els.featuredImage.classList.add("image-unavailable");
+    els.featuredImage.alt = `${missingName} image unavailable`;
+    els.featuredBreed.textContent = missingName;
+    els.featuredDescription.textContent =
+      `${missingName} is recognized by PawFinder, but the Dog CEO API does not currently provide an image collection for this breed. Try another breed or use Random Dog.`;
+
+    els.galleryTitle.textContent = `${missingName} — API Unavailable`;
+    els.gallerySubtitle.textContent =
+      "The breed is recognized, but Dog CEO does not currently provide images for it.";
+
+    els.gallery.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🐾</div>
+        <h3>Breed recognized</h3>
+        <p>PawFinder found <strong>${missingName}</strong>, but this breed is not available in the selected image API.</p>
+      </div>
+    `;
+
+    els.favoriteBtn.disabled = true;
+    setStatus(
+      `${missingName} is recognized, but its images are unavailable from Dog CEO.`,
+      "error"
+    );
+    return;
+  }
+
   try {
+    els.favoriteBtn.disabled = false;
+    els.featuredImage.classList.remove("image-unavailable");
+
     const { breed, subBreed } = parseBreedValue(value);
     const label = breedLabel(breed, subBreed);
+
     setStatus(`Finding ${label}...`);
+
     const image = await apiGet(imageUrlForBreed(value));
+
     currentDog = { image, breed: label, value };
     renderFeatured();
     els.heroDogImage.src = image;
+
     await loadGallery(value, label);
     setStatus(`${label} is ready to explore.`, "success");
   } catch (error) {
@@ -305,15 +551,19 @@ function clearFavorites() {
 els.breedSearch.addEventListener("input", event => populateBreedSelect(event.target.value));
 els.breedSearch.addEventListener("keydown", event => {
   if (event.key !== "Enter") return;
-  const query = event.target.value.trim().toLowerCase();
+
+  const query = event.target.value.trim();
   if (!query) return loadRandomDog();
-  const option = [...els.breedSelect.options].find(opt => opt.textContent.toLowerCase() === query)
-    || [...els.breedSelect.options].find(opt => opt.textContent.toLowerCase().includes(query));
-  if (option && option.value) {
-    els.breedSelect.value = option.value;
-    loadBreed(option.value);
+
+  const options = getBreedOptions(query);
+  const best = options[0];
+
+  if (best) {
+    els.breedSelect.value = best.value;
+    loadBreed(best.value);
+    setStatus(`Showing ${best.label}.`, "success");
   } else {
-    setStatus(`No breed matching “${event.target.value}” was found.`, "error");
+    setStatus(`No breed matching “${query}” was found. Try a shorter name or a different spelling.`, "error");
   }
 });
 els.breedSelect.addEventListener("change", event => loadBreed(event.target.value));
