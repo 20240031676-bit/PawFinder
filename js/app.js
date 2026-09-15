@@ -1,38 +1,43 @@
 const API_BASE = "https://dog.ceo/api";
-const FAVORITES_KEY = "pawfinderFavorites";
+const FAVORITES_KEY = "pawfinder-favorites";
 
 const els = {
   breedSearch: document.querySelector("#breedSearch"),
   breedSelect: document.querySelector("#breedSelect"),
-  searchBtn: document.querySelector("#searchBtn"),
   randomBtn: document.querySelector("#randomBtn"),
-  newPhotoBtn: document.querySelector("#newPhotoBtn"),
-  galleryBtn: document.querySelector("#galleryBtn"),
-  favoriteBtn: document.querySelector("#favoriteBtn"),
+  sideRandomBtn: document.querySelector("#sideRandomBtn"),
+  focusSearchBtn: document.querySelector("#focusSearchBtn"),
+  searchBtn: document.querySelector("#randomBtn"),
+  status: document.querySelector("#status"),
+  heroDogImage: document.querySelector("#heroDogImage"),
   featuredImage: document.querySelector("#featuredImage"),
   featuredBreed: document.querySelector("#featuredBreed"),
   featuredDescription: document.querySelector("#featuredDescription"),
-  status: document.querySelector("#status"),
-  gallery: document.querySelector("#gallery"),
+  favoriteBtn: document.querySelector("#favoriteBtn"),
+  newPhotoBtn: document.querySelector("#newPhotoBtn"),
+  galleryBtn: document.querySelector("#galleryBtn"),
   galleryTitle: document.querySelector("#galleryTitle"),
   gallerySubtitle: document.querySelector("#gallerySubtitle"),
-  favoritesGrid: document.querySelector("#favoritesGrid"),
+  gallery: document.querySelector("#gallery"),
+  popularBreeds: document.querySelector("#popularBreeds"),
   favoriteCount: document.querySelector("#favoriteCount"),
+  favoritePreview: document.querySelector("#favoritePreview"),
+  randomGallery: document.querySelector("#randomGallery"),
+  favoritesGrid: document.querySelector("#favoritesGrid"),
   clearFavoritesBtn: document.querySelector("#clearFavoritesBtn"),
+  showAllBtn: document.querySelector("#showAllBtn"),
+  themeBtn: document.querySelector("#themeBtn"),
   lightbox: document.querySelector("#lightbox"),
   lightboxImage: document.querySelector("#lightboxImage"),
   closeLightbox: document.querySelector("#closeLightbox")
 };
 
 let breeds = {};
-let currentDog = { image: "", breed: "" };
+let currentDog = { image: "", breed: "Random Dog", value: "" };
 let favorites = loadFavorites();
 
-function prettify(text) {
-  return text
-    .split("-")
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+function prettify(text = "") {
+  return text.split("-").map(part => part ? part.charAt(0).toUpperCase() + part.slice(1) : "").join(" ");
 }
 
 function breedLabel(breed, subBreed = "") {
@@ -57,8 +62,10 @@ async function loadBreeds() {
     setStatus("Loading dog breeds...");
     breeds = await apiGet("/breeds/list/all");
     populateBreedSelect();
-    setStatus(`${Object.keys(breeds).length} breeds loaded. Pick one or try a random dog.`, "success");
+    renderPopularBreeds();
     await loadRandomDog(false);
+    setStatus(`${Object.keys(breeds).length} breeds loaded. Pick one or try a random dog.`, "success");
+    await loadRandomGallery();
   } catch (error) {
     setStatus("Could not load the dog breed list. Please check your connection and try again.", "error");
     console.error(error);
@@ -67,18 +74,19 @@ async function loadBreeds() {
 
 function populateBreedSelect(filter = "") {
   const normalized = filter.trim().toLowerCase();
-  const options = ['<option value="">Select a breed</option>'];
+  const options = ['<option value="">All Breeds</option>'];
 
   Object.entries(breeds).forEach(([breed, subBreeds]) => {
-    const mainMatches = breed.includes(normalized) || prettify(breed).toLowerCase().includes(normalized);
+    const prettyBreed = prettify(breed);
+    const mainMatches = breed.includes(normalized) || prettyBreed.toLowerCase().includes(normalized);
     if (subBreeds.length === 0) {
-      if (!normalized || mainMatches) options.push(`<option value="${breed}">${prettify(breed)}</option>`);
+      if (!normalized || mainMatches) options.push(`<option value="${breed}">${prettyBreed}</option>`);
       return;
     }
 
-    if (!normalized || mainMatches) options.push(`<option value="${breed}">${prettify(breed)}</option>`);
+    if (!normalized || mainMatches) options.push(`<option value="${breed}">${prettyBreed}</option>`);
     subBreeds.forEach(sub => {
-      const full = `${sub} ${breed}`;
+      const full = `${sub} ${breed}`.toLowerCase();
       if (!normalized || mainMatches || full.includes(normalized)) {
         options.push(`<option value="${breed}/${sub}">${breedLabel(breed, sub)}</option>`);
       }
@@ -102,24 +110,27 @@ function imageUrlForBreed(value) {
 
 function imagesUrlForBreed(value, count = 8) {
   const { breed, subBreed } = parseBreedValue(value);
-  const path = subBreed
+  return subBreed
     ? `/breed/${encodeURIComponent(breed)}/${encodeURIComponent(subBreed)}/images/random/${count}`
     : `/breed/${encodeURIComponent(breed)}/images/random/${count}`;
-  return path;
 }
 
 function detectBreedFromUrl(url) {
-  const match = url.match(/images\.dogs\.net\/[^/]+\/([a-z-]+)-([a-z-]+)\./i);
+  const match = url.match(/\/breeds\/([^/]+)\/([^/]+)\.(?:jpg|jpeg|png|webp)/i);
   if (!match) return "Random Dog";
-  return prettify(`${match[1]}-${match[2]}`);
+  const breed = match[1];
+  const subBreed = match[2].split("-").slice(0, -1).join("-");
+  if (subBreed) return breedLabel(breed, subBreed);
+  return prettify(breed);
 }
 
 async function loadRandomDog(showStatus = true) {
   try {
     if (showStatus) setStatus("Finding a random dog...");
     const image = await apiGet("/breeds/image/random");
-    currentDog = { image, breed: detectBreedFromUrl(image) };
+    currentDog = { image, breed: detectBreedFromUrl(image), value: "" };
     renderFeatured();
+    els.heroDogImage.src = image;
     if (showStatus) setStatus("Here is a fresh dog for you!", "success");
   } catch (error) {
     setStatus("Could not fetch a random dog. Please try again.", "error");
@@ -130,11 +141,13 @@ async function loadRandomDog(showStatus = true) {
 async function loadBreed(value) {
   if (!value) return loadRandomDog();
   try {
-    const label = breedLabel(...value.split("/").reverse());
+    const { breed, subBreed } = parseBreedValue(value);
+    const label = breedLabel(breed, subBreed);
     setStatus(`Finding ${label}...`);
     const image = await apiGet(imageUrlForBreed(value));
-    currentDog = { image, breed: label };
+    currentDog = { image, breed: label, value };
     renderFeatured();
+    els.heroDogImage.src = image;
     await loadGallery(value, label);
     setStatus(`${label} is ready to explore.`, "success");
   } catch (error) {
@@ -148,7 +161,6 @@ async function loadGallery(value, label = "Selected breed") {
   els.galleryTitle.textContent = `${label} Gallery`;
   els.gallerySubtitle.textContent = "Click a photo to view it larger.";
   els.gallery.innerHTML = '<div class="empty-gallery">🐾 Loading photos...</div>';
-
   try {
     const images = await apiGet(imagesUrlForBreed(value, 8));
     renderGallery(images);
@@ -175,13 +187,18 @@ function renderFeatured() {
 }
 
 function loadFavorites() {
-  try { return JSON.parse(localStorage.getItem(FAVORITES_KEY)) || []; }
-  catch { return []; }
+  try {
+    const saved = JSON.parse(localStorage.getItem(FAVORITES_KEY));
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
 }
 
 function saveFavorites() {
   localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
   renderFavorites();
+  renderFavoritePreview();
 }
 
 function isFavorite(image) {
@@ -211,12 +228,10 @@ function updateFavoriteButton() {
 function renderFavorites() {
   els.favoriteCount.textContent = favorites.length;
   els.clearFavoritesBtn.hidden = favorites.length === 0;
-
   if (!favorites.length) {
     els.favoritesGrid.innerHTML = '<div class="empty-favorites">❤️ No favorites yet. Find a dog you love and click the heart.</div>';
     return;
   }
-
   els.favoritesGrid.innerHTML = favorites.map((item, index) => `
     <article class="favorite-card">
       <img src="${item.image}" alt="${item.breed} dog" loading="lazy">
@@ -226,6 +241,57 @@ function renderFavorites() {
       </div>
     </article>
   `).join("");
+}
+
+function renderFavoritePreview() {
+  if (!favorites.length) {
+    els.favoritePreview.innerHTML = '<div class="empty-mini">No favorites yet. Tap the heart on a dog you love.</div>';
+    return;
+  }
+  els.favoritePreview.innerHTML = favorites.slice(0, 3).map((item, index) => `
+    <div class="favorite-preview-item">
+      <img src="${item.image}" alt="${item.breed}" loading="lazy">
+      <strong>${item.breed}</strong>
+      <button type="button" data-preview-remove="${index}" aria-label="Remove favorite">×</button>
+    </div>
+  `).join("");
+}
+
+async function renderPopularBreeds() {
+  const preferred = ["retriever/golden", "husky", "bulldog/french", "german/shepherd"];
+  const valid = preferred.filter(value => {
+    const [breed, sub] = value.split("/");
+    return breeds[breed] && (!sub || breeds[breed].includes(sub));
+  });
+  const fallback = Object.keys(breeds).slice(0, 4).map(breed => breed);
+  const choices = valid.length ? valid : fallback;
+  els.popularBreeds.innerHTML = choices.map(value => `
+    <button class="breed-card" type="button" data-breed-value="${value}">
+      <img src="" data-breed-image="${value}" alt="${breedLabel(...value.split("/").reverse())} dog" loading="lazy">
+      <div><span>${breedLabel(...value.split("/").reverse())}</span><span>🐾</span></div>
+    </button>
+  `).join("");
+
+  await Promise.all([...els.popularBreeds.querySelectorAll("img[data-breed-image]")].map(async img => {
+    try {
+      img.src = await apiGet(imageUrlForBreed(img.dataset.breedImage));
+    } catch {
+      img.closest(".breed-card").style.display = "none";
+    }
+  }));
+}
+
+async function loadRandomGallery() {
+  try {
+    const images = await apiGet("/breeds/image/random/6");
+    els.randomGallery.innerHTML = images.map((image, index) => `
+      <button type="button" data-image="${image}" aria-label="Open random dog ${index + 1}">
+        <img src="${image}" alt="Random dog" loading="lazy">
+      </button>
+    `).join("");
+  } catch {
+    els.randomGallery.innerHTML = '<div class="empty-mini">Gallery unavailable.</div>';
+  }
 }
 
 function clearFavorites() {
@@ -238,53 +304,69 @@ function clearFavorites() {
 
 els.breedSearch.addEventListener("input", event => populateBreedSelect(event.target.value));
 els.breedSearch.addEventListener("keydown", event => {
-  if (event.key === "Enter") {
-    const selected = els.breedSelect.value;
-    if (selected) loadBreed(selected);
-  }
-});
-els.breedSelect.addEventListener("change", event => loadBreed(event.target.value));
-els.searchBtn.addEventListener("click", () => {
-  const query = els.breedSearch.value.trim().toLowerCase();
+  if (event.key !== "Enter") return;
+  const query = event.target.value.trim().toLowerCase();
   if (!query) return loadRandomDog();
-  populateBreedSelect(query);
-  const option = [...els.breedSelect.options].find(opt => opt.textContent.toLowerCase() === query);
-  if (option) {
+  const option = [...els.breedSelect.options].find(opt => opt.textContent.toLowerCase() === query)
+    || [...els.breedSelect.options].find(opt => opt.textContent.toLowerCase().includes(query));
+  if (option && option.value) {
     els.breedSelect.value = option.value;
     loadBreed(option.value);
   } else {
-    const partial = [...els.breedSelect.options].find(opt => opt.textContent.toLowerCase().includes(query));
-    if (partial && partial.value) {
-      els.breedSelect.value = partial.value;
-      loadBreed(partial.value);
-    } else {
-      setStatus(`No breed matching “${els.breedSearch.value}” was found.`, "error");
-    }
+    setStatus(`No breed matching “${event.target.value}” was found.`, "error");
   }
 });
+els.breedSelect.addEventListener("change", event => loadBreed(event.target.value));
 els.randomBtn.addEventListener("click", () => loadRandomDog());
-els.newPhotoBtn.addEventListener("click", async () => {
-  const value = els.breedSelect.value;
-  if (value) return loadBreed(value);
-  loadRandomDog();
+els.sideRandomBtn.addEventListener("click", () => loadRandomDog());
+els.focusSearchBtn.addEventListener("click", () => {
+  els.breedSearch.focus();
+  els.breedSearch.scrollIntoView({ behavior: "smooth", block: "center" });
+});
+els.newPhotoBtn.addEventListener("click", () => {
+  if (currentDog.value) loadBreed(currentDog.value);
+  else loadRandomDog();
 });
 els.galleryBtn.addEventListener("click", () => {
-  const value = els.breedSelect.value;
-  if (value) loadGallery(value, els.featuredBreed.textContent);
   document.querySelector(".gallery-section").scrollIntoView({ behavior: "smooth" });
+  if (currentDog.value) loadGallery(currentDog.value, currentDog.breed);
 });
 els.favoriteBtn.addEventListener("click", toggleFavorite);
 els.clearFavoritesBtn.addEventListener("click", clearFavorites);
+els.showAllBtn.addEventListener("click", () => {
+  els.breedSearch.value = "";
+  populateBreedSelect();
+  els.breedSelect.focus();
+  setStatus("All breeds are available in the selector.", "success");
+});
+
+els.popularBreeds.addEventListener("click", event => {
+  const card = event.target.closest("[data-breed-value]");
+  if (!card) return;
+  els.breedSelect.value = card.dataset.breedValue;
+  loadBreed(card.dataset.breedValue);
+  document.querySelector(".featured").scrollIntoView({ behavior: "smooth", block: "center" });
+});
 
 els.gallery.addEventListener("click", event => {
   const card = event.target.closest("[data-image]");
-  if (!card) return;
-  openLightbox(card.dataset.image);
+  if (card) openLightbox(card.dataset.image);
+});
+els.randomGallery.addEventListener("click", event => {
+  const card = event.target.closest("[data-image]");
+  if (card) openLightbox(card.dataset.image);
 });
 els.favoritesGrid.addEventListener("click", event => {
   const button = event.target.closest("[data-remove]");
   if (!button) return;
   favorites.splice(Number(button.dataset.remove), 1);
+  saveFavorites();
+  updateFavoriteButton();
+});
+els.favoritePreview.addEventListener("click", event => {
+  const button = event.target.closest("[data-preview-remove]");
+  if (!button) return;
+  favorites.splice(Number(button.dataset.previewRemove), 1);
   saveFavorites();
   updateFavoriteButton();
 });
@@ -303,5 +385,13 @@ els.closeLightbox.addEventListener("click", closeLightbox);
 els.lightbox.addEventListener("click", event => { if (event.target === els.lightbox) closeLightbox(); });
 document.addEventListener("keydown", event => { if (event.key === "Escape") closeLightbox(); });
 
+let warmMode = false;
+els.themeBtn.addEventListener("click", () => {
+  warmMode = !warmMode;
+  document.body.classList.toggle("warm-mode", warmMode);
+  els.themeBtn.textContent = warmMode ? "☼" : "◐";
+});
+
 renderFavorites();
+renderFavoritePreview();
 loadBreeds();

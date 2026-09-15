@@ -3,125 +3,164 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="PawFinder - explore dog breeds and discover adorable dog photos using the Dog CEO API.">
+  <meta name="description" content="PawFinder — a glassmorphism dog breed explorer powered by the Dog CEO API.">
   <title>PawFinder | Dog Breed Explorer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="site-header">
+  <div class="page-glow glow-one"></div>
+  <div class="page-glow glow-two"></div>
+  <div class="page-glow glow-three"></div>
+
+  <header class="site-header glass">
     <nav class="nav container" aria-label="Main navigation">
-      <a class="brand" href="#home" aria-label="PawFinder home"><span class="brand-paw">🐾</span> PawFinder</a>
+      <a class="brand" href="#home" aria-label="PawFinder home">
+        <span class="brand-icon">🐾</span>
+        <span>Paw<span>Finder</span></span>
+      </a>
       <div class="nav-links">
-        <a href="#explore">Explore</a>
-        <a href="#favorites">Favorites <span id="favoriteCount" class="count-badge">0</span></a>
-        <a href="#about">About</a>
+        <a class="active" href="#home">⌂ <span>Home</span></a>
+        <a href="#explore">✣ <span>Breeds</span></a>
+        <a href="#favorites">♡ <span>Favorites</span> <span id="favoriteCount" class="count-badge">0</span></a>
       </div>
+      <button id="themeBtn" class="icon-btn theme-btn" type="button" aria-label="Toggle appearance">◐</button>
     </nav>
   </header>
 
   <main id="home">
-    <section class="hero">
-      <div class="container hero-grid">
-        <div class="hero-copy">
-          <p class="eyebrow">DOG BREED EXPLORER</p>
-          <h1>Find your next <span>favorite</span> dog.</h1>
-          <p class="hero-text">Search breeds, discover adorable photos, and build your own list of favorites.</p>
-          <a class="primary-btn" href="#explore">Start Exploring <span>→</span></a>
+    <section class="hero container">
+      <div class="hero-copy">
+        <p class="eyebrow light">DOG BREED EXPLORER</p>
+        <h1>Find Your<br>Next <span>Favorite Dog</span></h1>
+        <p class="hero-text">Explore different breeds, discover adorable photos, and build your own list of favorites.</p>
+
+        <div class="hero-controls glass">
+          <label class="search-box" for="breedSearch">
+            <span>⌕</span>
+            <input id="breedSearch" type="search" placeholder="Search for a breed..." autocomplete="off">
+          </label>
+          <label class="select-box" for="breedSelect">
+            <span>🐾</span>
+            <select id="breedSelect" aria-label="Choose a breed">
+              <option value="">All Breeds</option>
+            </select>
+          </label>
+          <button id="randomBtn" class="primary-btn" type="button">🎲 <span>Random Dog</span></button>
         </div>
-        <div class="hero-art" aria-hidden="true">
-          <div class="hero-circle"></div>
-          <div class="hero-card hero-card-one">🐕</div>
-          <div class="hero-card hero-card-two">🐶</div>
-          <div class="hero-card hero-card-three">🦮</div>
-          <div class="hero-paw">🐾</div>
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+      </div>
+
+      <div class="hero-dog-wrap">
+        <div class="hero-dog-glow"></div>
+        <div class="hero-dog-frame glass">
+          <img id="heroDogImage" src="" alt="Featured dog">
         </div>
+        <div class="hero-note glass">Good dogs<br><strong>make better<br>days</strong> 🐾</div>
       </div>
     </section>
 
-    <section id="explore" class="section container">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">EXPLORE</p>
-          <h2>Discover dogs</h2>
+    <section id="explore" class="workspace container">
+      <aside class="sidebar">
+        <div class="glass side-card">
+          <h3><span class="orange-icon">🐾</span> Quick Actions</h3>
+          <button id="sideRandomBtn" class="side-action primary-action" type="button">🎲 <span>Random Dog</span></button>
+          <a class="side-action" href="#breeds">🐕 <span>Browse Breeds</span></a>
+          <button class="side-action" id="focusSearchBtn" type="button">⌕ <span>Search Breed</span></button>
+          <a class="side-action" href="#favorites">♡ <span>View Favorites</span></a>
         </div>
-        <button id="randomBtn" class="secondary-btn" type="button">🎲 Random Dog</button>
-      </div>
-
-      <div class="controls panel">
-        <label class="search-wrap" for="breedSearch">
-          <span aria-hidden="true">🔎</span>
-          <input id="breedSearch" type="search" placeholder="Search for a breed..." autocomplete="off">
-        </label>
-        <label class="select-wrap" for="breedSelect">
-          <span class="sr-only">Choose a breed</span>
-          <select id="breedSelect">
-            <option value="">Select a breed</option>
-          </select>
-        </label>
-        <button id="searchBtn" class="primary-btn compact" type="button">Search Breed</button>
-      </div>
-
-      <div id="status" class="status" role="status" aria-live="polite"></div>
-
-      <section id="featured" class="featured panel">
-        <div class="featured-image-wrap">
-          <img id="featuredImage" src="" alt="Selected dog" class="featured-image">
-          <button id="favoriteBtn" class="favorite-btn" type="button" aria-label="Add current dog to favorites">♡</button>
+        <div class="glass side-card trivia-card">
+          <h3>✦ Did You Know?</h3>
+          <p>There are hundreds of dog breeds around the world, each with its own unique look and personality.</p>
+          <span class="trivia-paw">🐾</span>
         </div>
-        <div class="featured-info">
-          <p class="eyebrow">CURRENT DISCOVERY</p>
-          <h3 id="featuredBreed">Random Dog</h3>
-          <p id="featuredDescription">Use the controls above to discover a breed or generate a random dog.</p>
-          <div class="featured-actions">
-            <button id="newPhotoBtn" class="secondary-btn" type="button">↻ New Photo</button>
-            <button id="galleryBtn" class="secondary-btn" type="button">View Gallery</button>
+      </aside>
+
+      <section class="main-column">
+        <section class="featured glass" id="breeds">
+          <div class="featured-image-wrap">
+            <img id="featuredImage" src="" alt="Selected dog" class="featured-image">
+            <div class="image-label">★ Featured</div>
+            <button id="favoriteBtn" class="favorite-btn" type="button" aria-label="Add current dog to favorites">♡</button>
           </div>
-        </div>
+          <div class="featured-info">
+            <p class="eyebrow light">CURRENT DISCOVERY</p>
+            <h2 id="featuredBreed">Random Dog</h2>
+            <p id="featuredDescription">Use the controls above to discover a breed or generate a random dog.</p>
+            <div class="tag-row">
+              <span>🐶 Friendly</span><span>✨ Discover</span><span>❤️ Favorite</span>
+            </div>
+            <div class="featured-actions">
+              <button id="newPhotoBtn" class="primary-btn small" type="button">↻ New Photo</button>
+              <button id="galleryBtn" class="ghost-btn" type="button">View Gallery →</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="content-block">
+          <div class="section-title-row">
+            <div>
+              <p class="eyebrow light">EXPLORE</p>
+              <h2>Popular Breeds</h2>
+            </div>
+            <button id="showAllBtn" class="link-btn" type="button">View All →</button>
+          </div>
+          <div id="popularBreeds" class="breed-cards"></div>
+        </section>
+
+        <section class="content-block gallery-section" aria-labelledby="galleryTitle">
+          <div class="section-title-row">
+            <div>
+              <p class="eyebrow light">DISCOVER MORE</p>
+              <h2 id="galleryTitle">Photo Gallery</h2>
+              <p id="gallerySubtitle" class="muted">Choose a breed to load photos.</p>
+            </div>
+          </div>
+          <div id="gallery" class="gallery"></div>
+        </section>
       </section>
 
-      <section class="gallery-section" aria-labelledby="galleryTitle">
-        <div class="gallery-heading">
-          <h3 id="galleryTitle">Photo Gallery</h3>
-          <p id="gallerySubtitle">Choose a breed to load photos.</p>
-        </div>
-        <div id="gallery" class="gallery"></div>
-      </section>
+      <aside class="rightbar">
+        <section class="glass side-card favorites-mini">
+          <div class="card-heading"><h3><span class="orange-icon">♡</span> Your Favorites</h3><a href="#favorites">View All →</a></div>
+          <div id="favoritePreview"></div>
+        </section>
+        <section class="glass side-card random-mini">
+          <div class="card-heading"><h3><span class="orange-icon">▣</span> Random Dog Gallery</h3></div>
+          <div id="randomGallery" class="mini-gallery"></div>
+        </section>
+      </aside>
     </section>
 
-    <section id="favorites" class="section favorites-section">
-      <div class="container">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">YOUR COLLECTION</p>
-            <h2>Favorite dogs</h2>
-          </div>
-          <button id="clearFavoritesBtn" class="text-btn" type="button">Clear all</button>
+    <section id="favorites" class="favorites-section container">
+      <div class="section-title-row">
+        <div>
+          <p class="eyebrow light">YOUR COLLECTION</p>
+          <h2>Favorite Dogs</h2>
         </div>
-        <div id="favoritesGrid" class="favorites-grid"></div>
+        <button id="clearFavoritesBtn" class="link-btn" type="button" hidden>Clear All</button>
       </div>
+      <div id="favoritesGrid" class="favorites-grid"></div>
     </section>
 
-    <section id="about" class="about-section">
-      <div class="container about-grid">
-        <div>
-          <p class="eyebrow">ABOUT PAWFINDER</p>
-          <h2>Made for dog lovers and API explorers.</h2>
-        </div>
-        <div>
-          <p>PawFinder is a student-built web application that consumes real dog image data from the Dog CEO API using JavaScript Fetch and GET requests.</p>
-          <p class="small-note">No API key is required for the public endpoints used by this project.</p>
-        </div>
+    <section id="about" class="about-section container glass">
+      <div>
+        <p class="eyebrow light">ABOUT PAWFINDER</p>
+        <h2>Made for dog lovers and API explorers.</h2>
+      </div>
+      <div>
+        <p>PawFinder is a student-built web application that consumes real dog image data from the Dog CEO API using JavaScript Fetch and GET requests.</p>
+        <p class="small-note">No API key is required for the public endpoints used by this project.</p>
       </div>
     </section>
   </main>
 
   <footer class="footer">
     <div class="container footer-inner">
-      <p>🐾 PawFinder</p>
-      <p>Powered by the Dog CEO API</p>
+      <p>🐾 <strong>PawFinder</strong> <span>• Explore • Discover • Love</span></p>
+      <p>Powered by Dog CEO API ↗</p>
     </div>
   </footer>
 
